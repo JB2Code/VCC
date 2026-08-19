@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\VCC\\V60Control\\V60Control.csproj": {}
+    "C:\\Users\\jerem\\Documents\\GitHub\\VCC\\V60Control\\V60Control.csproj": {}
   },
   "projects": {
-    "D:\\VCC\\V60Control\\V60Control.csproj": {
+    "C:\\Users\\jerem\\Documents\\GitHub\\VCC\\V60Control\\V60Control.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\VCC\\V60Control\\V60Control.csproj",
+        "projectUniqueName": "C:\\Users\\jerem\\Documents\\GitHub\\VCC\\V60Control\\V60Control.csproj",
         "projectName": "V60Control",
-        "projectPath": "D:\\VCC\\V60Control\\V60Control.csproj",
-        "packagesPath": "C:\\Users\\Jeremy Berger\\.nuget\\packages\\",
-        "outputPath": "D:\\VCC\\V60Control\\obj\\",
+        "projectPath": "C:\\Users\\jerem\\Documents\\GitHub\\VCC\\V60Control\\V60Control.csproj",
+        "packagesPath": "C:\\Users\\jerem\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\jerem\\Documents\\GitHub\\VCC\\V60Control\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Jeremy Berger\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\jerem\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
@@ -63,6 +63,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[8.0.28, 8.0.28]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[8.0.28, 8.0.28]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "version": "[8.0.28, 8.0.28]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -71,7 +85,12 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\x64\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = V60Control
-build_property.ProjectDir = D:\VCC\V60Control\
+build_property.ProjectDir = C:\Users\jerem\Documents\GitHub\VCC\V60Control\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

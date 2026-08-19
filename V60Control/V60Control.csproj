@@ -11,7 +11,31 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>1.0.0</Version>
+    <Product>V60 Camera Control</Product>
+    <Company>J2Code</Company>
+    <Copyright>Copyright © J2Code</Copyright>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Uebersetzte Ressourcen nur fuer die Sprachen, in denen die App bedient wird (spart ~16 MB). -->
+    <SatelliteResourceLanguages>en;de</SatelliteResourceLanguages>
+
+    <!-- Die App laeuft nur als 64-Bit; die x86-Kopie von libvlc (~96 MB) waere toter Ballast. -->
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+  </PropertyGroup>
+
+  <!-- Optionale Diaet fuer das Setup: Plugins, die ein reiner RTSP-Viewer nie anfasst.
+       Spart ~14 MB. Bei Bedarf einkommentieren und Video vorher testen.
+  <ItemGroup>
+    <VlcWindowsX64ExcludeFiles Include="plugins\visualization\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\services_discovery\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\meta_engine\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\stream_extractor\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\stream_out\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access_output\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\mux\%2A%2A" />
+  </ItemGroup>
+  -->
 
   <ItemGroup>
     <PackageReference Include="LibVLCSharp.WPF" Version="3.9.3" />

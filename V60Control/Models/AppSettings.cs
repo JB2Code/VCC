@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace V60Control.Models;
 
 public class AppSettings
@@ -5,6 +7,10 @@ public class AppSettings
     public string CameraIp { get; set; } = "192.168.100.88";
     public int ViscaPort { get; set; } = 5678;
     public int RtspPort { get; set; } = 554;
+
+    /// <summary>Login der Kamera (RTSP-Authentifizierung). Standard laut Werkseinstellung: admin/admin.</summary>
+    public string Username { get; set; } = "admin";
+    public string Password { get; set; } = "admin";
 
     /// <summary>1 = Main-Stream (beste Qualität), 2 = Sub-Stream (geringere Bandbreite).</summary>
     public int StreamNumber { get; set; } = 1;
@@ -28,6 +34,28 @@ public class AppSettings
     {
         if (!string.IsNullOrWhiteSpace(RtspUrlOverride))
             return RtspUrlOverride!;
-        return $"rtsp://{CameraIp}:{RtspPort}/{StreamNumber}";
+
+        string credentials = "";
+        if (!string.IsNullOrEmpty(Username))
+        {
+            // Benutzername/Passwort URL-codieren, damit Sonderzeichen (@ : / usw.) die URL nicht zerstören
+            string user = Uri.EscapeDataString(Username);
+            string pass = Uri.EscapeDataString(Password ?? "");
+            credentials = $"{user}:{pass}@";
+        }
+        return $"rtsp://{credentials}{CameraIp}:{RtspPort}/{StreamNumber}";
+    }
+
+    /// <summary>Wie GetRtspUrl, aber ohne Passwort im Klartext – für Statusanzeige/Logs.</summary>
+    [JsonIgnore]
+    public string RtspUrlMasked
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(RtspUrlOverride))
+                return RtspUrlOverride!;
+            string credentials = string.IsNullOrEmpty(Username) ? "" : $"{Username}:***@";
+            return $"rtsp://{credentials}{CameraIp}:{RtspPort}/{StreamNumber}";
+        }
     }
 }

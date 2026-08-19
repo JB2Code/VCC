@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <!-- Von build-installer.ps1 gesetzt: -d Version=... -d PublishDir=... -->
+  <?ifndef Version?><?define Version="1.0.0"?><?endif?>
+  <?ifndef PublishDir?><?define PublishDir="..\publish"?><?endif?>
+  <?ifndef IconFile?><?define IconFile="..\V60Control\app.ico"?><?endif?>
+  <?ifndef LicenseFile?><?define LicenseFile="License.rtf"?><?endif?>
+
+  <Package Name="V60 Camera Control"
+           Manufacturer="J2Code"
+           Version="$(Version)"
+           UpgradeCode="4B1239DC-469F-4B4C-91E7-85C610E5F00E"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="V60 Camera Control – Steuerung der Edis V60CL-N PTZ-Kamera" />
+
+    <!-- Aeltere Version wird beim Setup automatisch ersetzt. -->
+    <MajorUpgrade DowngradeErrorMessage="Es ist bereits eine neuere Version von [ProductName] installiert. Bitte diese zuerst deinstallieren." />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Die App ist 64-Bit (libvlc win-x64), 32-Bit-Windows wird nicht unterstuetzt. -->
+    <Launch Condition="VersionNT64" Message="[ProductName] benoetigt ein 64-Bit-Windows." />
+
+    <Icon Id="AppIcon.ico" SourceFile="$(IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <!-- Desktop-Verknuepfung: im Setup abwaehlbar -->
+    <Property Id="INSTALLDESKTOPSHORTCUT" Value="1" Secure="yes" />
+
+    <Feature Id="Main" Title="V60 Camera Control" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentGroupRef Id="Shortcuts" />
+    </Feature>
+
+    <!-- Programmdateien: gesamter publish-Ordner inkl. libvlc-Unterbaum -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(PublishDir)\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="Shortcuts">
+      <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="A7D16C3A-C8BC-46AD-A25E-B10FC75FC6F1">
+        <Shortcut Id="StartMenuLink"
+                  Name="V60 Camera Control"
+                  Description="Steuerung der Edis V60CL-N PTZ-Kamera"
+                  Target="[INSTALLFOLDER]V60Control.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKMU" Key="Software\J2Code\V60Control"
+                       Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="CCFAB466-E5D8-4EF7-A243-BC476EEB2082"
+                 Condition="INSTALLDESKTOPSHORTCUT">
+        <Shortcut Id="DesktopLink"
+                  Name="V60 Camera Control"
+                  Description="Steuerung der Edis V60CL-N PTZ-Kamera"
+                  Target="[INSTALLFOLDER]V60Control.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKMU" Key="Software\J2Code\V60Control"
+                       Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="V60 Camera Control" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- Setup-Oberflaeche mit waehlbarem Zielordner -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(LicenseFile)" />
+
+  </Package>
+</Wix>

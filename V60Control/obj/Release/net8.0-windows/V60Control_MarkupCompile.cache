@@ -4,16 +4,16 @@
 winexe
 C#
 .cs
-D:\VCC\V60Control\obj\Release\net8.0-windows\
+C:\Users\jerem\Documents\GitHub\VCC\V60Control\obj\Release\net8.0-windows\
 V60Control
 none
 false
 TRACE;RELEASE;NET;NET8_0;NETCOREAPP
-D:\VCC\V60Control\App.xaml
+C:\Users\jerem\Documents\GitHub\VCC\V60Control\App.xaml
 2787859397
-844381214374
+8441322566159
 8-2017335119
-200-1559683269
+200-344038234
 MainWindow.xaml;NameDialog.xaml;
 
 False

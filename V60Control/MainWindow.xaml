@@ -36,20 +36,21 @@
             <TextBlock Grid.Row="1" Style="{StaticResource SectionHeader}" Text="PRESETS"/>
             <Border Grid.Row="2" Background="{StaticResource PanelBrush}" CornerRadius="8" Padding="8"
                     BorderBrush="{StaticResource BorderBrush2}" BorderThickness="1">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <WrapPanel>
-                        <!-- Neues Preset -->
-                        <Button x:Name="AddPresetButton" Width="150" Height="118" Margin="4"
-                                Click="AddPreset_Click" ToolTip="Aktuelle Kameraposition als Preset speichern (mit Snapshot als Vorschaubild)">
-                            <StackPanel>
-                                <TextBlock Text="＋" FontSize="30" HorizontalAlignment="Center"
-                                           Foreground="{StaticResource AccentBrush}"/>
-                                <TextBlock Text="Neues Preset" HorizontalAlignment="Center"
-                                           Foreground="{StaticResource FgDim}"/>
-                            </StackPanel>
-                        </Button>
+                <DockPanel>
+                    <!-- Ganz rechts: Preset anlegen / löschen -->
+                    <StackPanel DockPanel.Dock="Right" Margin="6,0,0,0" VerticalAlignment="Center">
+                        <Button x:Name="AddPresetButton" Width="36" Height="36" Padding="0"
+                                Content="＋" FontSize="18" Foreground="{StaticResource AccentBrush}"
+                                Click="AddPreset_Click"
+                                ToolTip="Aktuelle Kameraposition als Preset speichern (mit Snapshot als Vorschaubild)"/>
+                        <Button x:Name="DeleteModeButton" Width="36" Height="36" Padding="0"
+                                Content="🗑" FontSize="15" Margin="0,6,0,0"
+                                Click="DeleteMode_Click"
+                                ToolTip="Lösch-Modus: aktivieren und dann ein Preset anklicken, um es zu löschen"/>
+                    </StackPanel>
 
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200"
+                                  HorizontalScrollBarVisibility="Disabled">
                         <!-- Preset-Kacheln -->
                         <ItemsControl x:Name="PresetList">
                             <ItemsControl.ItemsPanel>
@@ -88,8 +89,8 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </WrapPanel>
-                </ScrollViewer>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 
@@ -112,6 +113,22 @@
                                 Style="{StaticResource AccentButton}" Margin="8,0,0,0"
                                 Click="Connect_Click" MinWidth="92"/>
                     </Grid>
+
+                    <!-- Login -->
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="UserBox" Grid.Column="0" Margin="0,0,4,0"
+                                 ToolTip="Benutzername der Kamera (Standard: admin)"/>
+                        <PasswordBox x:Name="PassBox" Grid.Column="1" Margin="4,0,0,0"
+                                     ToolTip="Passwort der Kamera (Standard: admin)"/>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                        <TextBlock Text="Benutzername / Passwort" FontSize="11"
+                                   Foreground="{StaticResource FgDim}"/>
+                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="{StaticResource DangerBrush}"
                                  VerticalAlignment="Center"/>

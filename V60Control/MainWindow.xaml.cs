@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private readonly HashSet<Key> _heldKeys = [];
     private bool _padActive;
     private bool _autoFocus;
+    private bool _deleteMode;
 
     private int PtSpeed => (int)PtSpeedSlider.Value;
     private int TiltSpeed => Math.Clamp((int)(PtSpeedSlider.Value * 20 / 24), 1, 20);
@@ -53,6 +54,8 @@ public partial class MainWindow : Window
     {
         _settings = Storage.LoadSettings();
         IpBox.Text = _settings.CameraIp;
+        UserBox.Text = _settings.Username;
+        PassBox.Password = _settings.Password;
         LatencySlider.Value = _settings.LatencyMs;
         PtSpeedSlider.Value = _settings.PanTiltSpeed;
         ZoomSpeedSlider.Value = _settings.ZoomSpeed;
@@ -68,6 +71,8 @@ public partial class MainWindow : Window
     private void CollectSettings()
     {
         _settings.CameraIp = IpBox.Text.Trim();
+        _settings.Username = UserBox.Text.Trim();
+        _settings.Password = PassBox.Password;
         _settings.LatencyMs = (int)LatencySlider.Value;
         _settings.PanTiltSpeed = (int)PtSpeedSlider.Value;
         _settings.ZoomSpeed = (int)ZoomSpeedSlider.Value;
@@ -88,7 +93,7 @@ public partial class MainWindow : Window
         _mediaPlayer.Playing += (_, _) => Dispatcher.Invoke(() =>
         {
             ShowVideoOverlay(null);
-            StatusText.Text = $"Verbunden – {_settings.GetRtspUrl()}";
+            StatusText.Text = $"Verbunden – {_settings.RtspUrlMasked}";
         });
         _mediaPlayer.EncounteredError += (_, _) => Dispatcher.Invoke(
             () => ShowVideoOverlay("Videofehler – Einstellungen prüfen"));
@@ -463,8 +468,29 @@ public partial class MainWindow : Window
 
     private async void Preset_Click(object sender, RoutedEventArgs e)
     {
-        if (PresetFromSender(sender) is { } preset)
-            await Safe(() => _visca.PresetRecallAsync((byte)preset.Slot));
+        if (PresetFromSender(sender) is not { } preset) return;
+
+        if (_deleteMode)
+        {
+            await DeletePresetAsync(preset);
+            return;
+        }
+
+        await Safe(() => _visca.PresetRecallAsync((byte)preset.Slot));
+    }
+
+    private void DeleteMode_Click(object sender, RoutedEventArgs e)
+        => SetDeleteMode(!_deleteMode);
+
+    private void SetDeleteMode(bool active)
+    {
+        _deleteMode = active;
+        DeleteModeButton.Background = active
+            ? (Brush)FindResource("DangerBrush")
+            : (Brush)FindResource("PanelLight");
+        DeleteModeButton.ToolTip = active
+            ? "Lösch-Modus aktiv: Preset anklicken, um es zu löschen – erneut klicken zum Beenden"
+            : "Lösch-Modus: aktivieren und dann ein Preset anklicken, um es zu löschen";
     }
 
     private async void PresetRecallMenu_Click(object sender, RoutedEventArgs e)
@@ -501,8 +527,12 @@ public partial class MainWindow : Window
 
     private async void PresetDelete_Click(object sender, RoutedEventArgs e)
     {
-        if (PresetFromSender(sender) is not { } preset) return;
+        if (PresetFromSender(sender) is { } preset)
+            await DeletePresetAsync(preset);
+    }
 
+    private async Task DeletePresetAsync(Preset preset)
+    {
         var result = MessageBox.Show(this, $"Preset '{preset.Name}' wirklich löschen?", "Preset löschen",
             MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (result != MessageBoxResult.Yes) return;
@@ -514,5 +544,8 @@ public partial class MainWindow : Window
         }
         _presets.Remove(preset);
         Storage.SavePresets(_presets);
+
+        if (_presets.Count == 0)
+            SetDeleteMode(false);
     }
 }

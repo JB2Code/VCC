@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("V60Control")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f2d9bf901cc45a07a61cce71d2e5ccda704ca400")]
 [assembly: System.Reflection.AssemblyProductAttribute("V60Control")]
 [assembly: System.Reflection.AssemblyTitleAttribute("V60Control")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

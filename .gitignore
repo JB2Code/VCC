@@ -1,0 +1,9 @@
+# Build-Ausgaben
+bin/
+obj/
+
+# Installer-Zwischenstaende und fertige Setups
+installer/publish/
+installer/out/
+installer/*.wixpdb
+installer/.tools/
