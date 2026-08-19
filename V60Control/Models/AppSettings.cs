@@ -30,6 +30,11 @@ public class AppSettings
     public int ZoomSpeed { get; set; } = 5;       // 0..7
     public int FocusSpeed { get; set; } = 4;      // 0..7
 
+    /// <summary>Tempo beim Anfahren von Presets (1..14). Bewusst unter dem
+    /// Protokoll-Maximum von 24: Presets werden langsamer ruhiger und meist
+    /// wiederholgenauer angefahren.</summary>
+    public int PresetSpeed { get; set; } = 6;
+
     public string GetRtspUrl()
     {
         if (!string.IsNullOrWhiteSpace(RtspUrlOverride))

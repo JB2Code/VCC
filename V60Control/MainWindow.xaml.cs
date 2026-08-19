@@ -25,9 +25,24 @@ public partial class MainWindow : Window
     private bool _autoFocus;
     private bool _deleteMode;
 
+    /// <summary>Anzahl der Stopp-Ereignisse, die auf einen selbst ausgelösten Stopp
+    /// zurückgehen (Neustart per Knopf, Programmende). Sie dürfen keine automatische
+    /// Wiederaufnahme auslösen. Das Ereignis trifft erst ein, nachdem der neue Stream
+    /// schon gestartet wurde – ein einfaches Flag würde deshalb nicht reichen.</summary>
+    /// <summary>Nachlauf der Mechanik nach einem Stopp-Befehl. Wird eine Position zu
+    /// früh gespeichert, hält die Kamera einen Punkt fest, den der Benutzer nie gesehen hat.</summary>
+    private static readonly TimeSpan PresetSettleDelay = TimeSpan.FromMilliseconds(400);
+
+    private int _expectedVideoStops;
+    private bool _videoRetryPending;
+    private bool _shuttingDown;
+
     private int PtSpeed => (int)PtSpeedSlider.Value;
     private int TiltSpeed => Math.Clamp((int)(PtSpeedSlider.Value * 20 / 24), 1, 20);
     private int ZoomSpeed => (int)ZoomSpeedSlider.Value;
+    private int PresetSpeed => (int)PresetSpeedSlider.Value;
+    /// <summary>Tilt-Achse kennt nur 1–20 statt 1–24 – Reglerwert proportional umrechnen.</summary>
+    private int PresetTiltSpeed => Math.Clamp((int)(PresetSpeedSlider.Value * 20 / 24), 1, 20);
 
     public MainWindow()
     {
@@ -38,6 +53,18 @@ public partial class MainWindow : Window
         WirePadButtons();
 
         _visca.ConnectionChanged += connected => Dispatcher.Invoke(() => UpdateStatus(connected));
+        _visca.Reconnecting += () => Dispatcher.Invoke(
+            () => StatusText.Text = "Verbindung verloren – verbinde neu …");
+
+        // Wird das Fenster weggeklickt, während eine Taste oder ein Pad-Knopf gehalten
+        // wird, kommt kein Loslassen mehr an und die Kamera führe die Fahrt endlos weiter.
+        // Nur dann eingreifen – ein pauschaler Stopp würde eine laufende Preset-Anfahrt
+        // mittendrin abbrechen.
+        Deactivated += async (_, _) =>
+        {
+            if (_padActive || _heldKeys.Count > 0)
+                await ReleaseAllControlsAsync();
+        };
 
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
@@ -59,6 +86,10 @@ public partial class MainWindow : Window
         LatencySlider.Value = _settings.LatencyMs;
         PtSpeedSlider.Value = _settings.PanTiltSpeed;
         ZoomSpeedSlider.Value = _settings.ZoomSpeed;
+        // In den zulässigen Reglerbereich einpassen, falls eine ältere settings.json
+        // einen Wert außerhalb enthält.
+        PresetSpeedSlider.Value = Math.Clamp(_settings.PresetSpeed,
+            (int)PresetSpeedSlider.Minimum, (int)PresetSpeedSlider.Maximum);
         RtspTcpCheck.IsChecked = _settings.RtspOverTcp;
         MuteCheck.IsChecked = _settings.AudioMuted;
         MainStreamRadio.IsChecked = _settings.StreamNumber == 1;
@@ -76,6 +107,7 @@ public partial class MainWindow : Window
         _settings.LatencyMs = (int)LatencySlider.Value;
         _settings.PanTiltSpeed = (int)PtSpeedSlider.Value;
         _settings.ZoomSpeed = (int)ZoomSpeedSlider.Value;
+        _settings.PresetSpeed = (int)PresetSpeedSlider.Value;
         _settings.RtspOverTcp = RtspTcpCheck.IsChecked == true;
         _settings.AudioMuted = MuteCheck.IsChecked == true;
         _settings.StreamNumber = SubStreamRadio.IsChecked == true ? 2 : 1;
@@ -95,10 +127,22 @@ public partial class MainWindow : Window
             ShowVideoOverlay(null);
             StatusText.Text = $"Verbunden – {_settings.RtspUrlMasked}";
         });
-        _mediaPlayer.EncounteredError += (_, _) => Dispatcher.Invoke(
-            () => ShowVideoOverlay("Videofehler – Einstellungen prüfen"));
-        _mediaPlayer.Stopped += (_, _) => Dispatcher.Invoke(
-            () => ShowVideoOverlay("Nicht verbunden"));
+        _mediaPlayer.EncounteredError += (_, _) => Dispatcher.Invoke(() =>
+        {
+            ShowVideoOverlay("Videofehler – neuer Versuch …");
+            ScheduleVideoRetry();
+        });
+        _mediaPlayer.Stopped += (_, _) => Dispatcher.Invoke(() =>
+        {
+            if (_expectedVideoStops > 0)
+            {
+                // Selbst ausgelöst – die Anzeige übernimmt der folgende Start.
+                _expectedVideoStops--;
+                return;
+            }
+            ShowVideoOverlay("Videostream abgerissen – neuer Versuch …");
+            ScheduleVideoRetry();
+        });
         VideoView.MediaPlayer = _mediaPlayer;
     }
 
@@ -107,7 +151,13 @@ public partial class MainWindow : Window
         CollectSettings();
         Storage.SaveSettings(_settings);
         Storage.SavePresets(_presets);
-        _mediaPlayer?.Stop();
+
+        // Beendet man das Programm während einer Fahrt, führt die Kamera sie sonst
+        // weiter aus. Kurz auf die Bestätigung warten, aber das Schließen nicht blockieren.
+        try { _visca.StopAllAsync().Wait(TimeSpan.FromMilliseconds(300)); } catch { }
+
+        _shuttingDown = true;
+        StopVideo();
         _mediaPlayer?.Dispose();
         _libVlc?.Dispose();
         _visca.Dispose();
@@ -151,6 +201,15 @@ public partial class MainWindow : Window
         StatusText.Text = connected ? "Steuerung verbunden" : "Getrennt";
     }
 
+    /// <summary>Video bewusst anhalten, ohne die automatische Wiederaufnahme auszulösen.</summary>
+    private void StopVideo()
+    {
+        if (_mediaPlayer is null) return;
+        // Nur ein laufender Player meldet anschließend „Stopped".
+        if (_mediaPlayer.IsPlaying) _expectedVideoStops++;
+        _mediaPlayer.Stop();
+    }
+
     private void StartVideo()
     {
         if (_libVlc is null || _mediaPlayer is null) return;
@@ -165,6 +224,24 @@ public partial class MainWindow : Window
 
         ShowVideoOverlay("Verbinde Video …");
         _mediaPlayer.Play(media);
+    }
+
+    /// <summary>Nimmt einen abgerissenen Videostream nach kurzer Pause wieder auf.
+    /// Der Aufruf kommt aus einem LibVLC-Ereignis – der Player darf von dort nicht
+    /// direkt neu gestartet werden, deshalb der Umweg über den Dispatcher.</summary>
+    private void ScheduleVideoRetry()
+    {
+        if (_shuttingDown || _videoRetryPending || _mediaPlayer is null) return;
+
+        _videoRetryPending = true;
+        _ = Dispatcher.InvokeAsync(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            _videoRetryPending = false;
+            if (_shuttingDown || _mediaPlayer is null) return;
+            if (_mediaPlayer.IsPlaying) return;
+            StartVideo();
+        });
     }
 
     /// <summary>Overlay über dem Videofenster: Text anzeigen (schwarz gefüllt)
@@ -188,7 +265,7 @@ public partial class MainWindow : Window
     {
         CollectSettings();
         Storage.SaveSettings(_settings);
-        _mediaPlayer?.Stop();
+        StopVideo();
         StartVideo();
     }
 
@@ -252,6 +329,19 @@ public partial class MainWindow : Window
     private static async Task Safe(Func<Task> action)
     {
         try { await action(); } catch { }
+    }
+
+    /// <summary>Alle Bewegungen anhalten und die Bedienelemente in den Ruhezustand
+    /// zurücksetzen – für Fälle, in denen kein regulärer Loslass-Befehl mehr kommt.</summary>
+    private async Task ReleaseAllControlsAsync()
+    {
+        _padActive = false;
+        _heldKeys.Clear();
+        HighlightPad(0, 0);
+        SetKeyVisual(ZoomInButton, false);
+        SetKeyVisual(ZoomOutButton, false);
+        SetKeyVisual(PadHome, false);
+        await Safe(_visca.StopAllAsync);
     }
 
     private async void Home_Click(object sender, RoutedEventArgs e) => await Safe(_visca.HomeAsync);
@@ -399,7 +489,11 @@ public partial class MainWindow : Window
         var dialog = new NameDialog("Neues Preset", "Name für das Preset:", $"Preset {slot}") { Owner = this };
         if (dialog.ShowDialog() != true) return;
 
-        // Position in der Kamera speichern und Livebild als Thumbnail sichern
+        // Position in der Kamera speichern und Livebild als Thumbnail sichern.
+        // Vorher anhalten und nachlaufen lassen, damit gespeicherte Position,
+        // Livebild und Thumbnail denselben Bildausschnitt zeigen.
+        await Safe(_visca.StopAllAsync);
+        await Task.Delay(PresetSettleDelay);
         await Safe(() => _visca.PresetSetAsync((byte)slot));
         var thumbFile = await CaptureThumbnailAsync(slot);
 
@@ -476,6 +570,17 @@ public partial class MainWindow : Window
             return;
         }
 
+        await RecallPresetAsync(preset);
+    }
+
+    /// <summary>Preset anfahren. Eine noch laufende Fahrt wird vorher abgebrochen –
+    /// sonst zieht sie die Kamera nach dem Anfahren wieder aus der Position.</summary>
+    private async Task RecallPresetAsync(Preset preset)
+    {
+        await Safe(_visca.StopAllAsync);
+        // Tempo vor jedem Anfahren setzen – so wirkt eine Reglerbewegung sofort,
+        // auch ohne Neuverbinden.
+        await Safe(() => _visca.SetPresetSpeedAsync(PresetSpeed, PresetTiltSpeed));
         await Safe(() => _visca.PresetRecallAsync((byte)preset.Slot));
     }
 
@@ -496,7 +601,7 @@ public partial class MainWindow : Window
     private async void PresetRecallMenu_Click(object sender, RoutedEventArgs e)
     {
         if (PresetFromSender(sender) is { } preset)
-            await Safe(() => _visca.PresetRecallAsync((byte)preset.Slot));
+            await RecallPresetAsync(preset);
     }
 
     private async void PresetUpdate_Click(object sender, RoutedEventArgs e)
@@ -504,6 +609,8 @@ public partial class MainWindow : Window
         if (PresetFromSender(sender) is not { } preset) return;
         if (!_visca.IsConnected) return;
 
+        await Safe(_visca.StopAllAsync);
+        await Task.Delay(PresetSettleDelay);
         await Safe(() => _visca.PresetSetAsync((byte)preset.Slot));
         var thumb = await CaptureThumbnailAsync(preset.Slot);
         if (thumb is not null)

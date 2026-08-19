@@ -10,11 +10,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("V60Control")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("J2Code")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
+[assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright © J2Code")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f2d9bf901cc45a07a61cce71d2e5ccda704ca400")]
-[assembly: System.Reflection.AssemblyProductAttribute("V60Control")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+528b300e78eee33162ca3b25d2f95f8d4d6c8f9a")]
+[assembly: System.Reflection.AssemblyProductAttribute("V60 Camera Control")]
 [assembly: System.Reflection.AssemblyTitleAttribute("V60Control")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 [assembly: System.Runtime.Versioning.TargetPlatformAttribute("Windows7.0")]

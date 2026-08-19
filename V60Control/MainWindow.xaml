@@ -171,6 +171,22 @@
                                    VerticalAlignment="Center" MinWidth="20" TextAlignment="Right"/>
                     </Grid>
 
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Preset-Anfahrt" Foreground="{StaticResource FgDim}"
+                                   VerticalAlignment="Center" FontSize="12"
+                                   ToolTip="Tempo beim Anfahren gespeicherter Presets. Langsamer = ruhiger und meist genauer."/>
+                        <Slider x:Name="PresetSpeedSlider" Grid.Column="1" Minimum="1" Maximum="14" Value="6"
+                                Margin="8,0" VerticalAlignment="Center" IsSnapToTickEnabled="True" TickFrequency="1"
+                                ToolTip="Bewusst auf 14 begrenzt – die Kamera könnte schneller, fährt Positionen dann aber unruhiger an"/>
+                        <TextBlock Grid.Column="2" Text="{Binding ElementName=PresetSpeedSlider, Path=Value, StringFormat=N0}"
+                                   VerticalAlignment="Center" MinWidth="20" TextAlignment="Right"/>
+                    </Grid>
+
                     <!-- Zoom -->
                     <TextBlock Style="{StaticResource SectionHeader}" Text="ZOOM"/>
                     <Grid>
